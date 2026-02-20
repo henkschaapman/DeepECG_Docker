@@ -1,0 +1,24 @@
+
+docker run -it --gpus all --rm \
+-v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:/app/data/data_location:ro \
+-v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:/home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:ro \
+-v ./weights/:/app/weights/:ro \
+-v ./output_weights/:/app/output_weights/ \
+deepecg-docker:latest \
+/bin/bash
+
+POS_WEIGHT=$(cat /app/data/data_location/labels/pos_weight.txt)
+export WANDB_API_KEY=
+export WANDB_NAME=initial_test_run
+
+CUDA_VISIBLE_DEVICES=0 fairseq-hydra-train \
+	common.fp16=true \
+	task.data=/app/data/data_location/manifests/af_detection/ \
+	+task.label_file=/app/data/data_location/labels/y.npy \
+	model.model_path=/app/weights/base_ssl.pt \
+	model.num_labels=1 \
+	criterion._name=binary_cross_entropy_with_logits \
+	+criterion.pos_weight=$POS_WEIGHT \
+	checkpoint.save_dir=/app/output_weights \
+	--config-dir /app/fairseq-signals/examples/w2v_cmsc/config/finetuning/ecg_transformer \
+	--config-name diagnosis

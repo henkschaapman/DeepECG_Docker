@@ -1,0 +1,50 @@
+1. Where metrics originate
+Task/infrastructure metrics — from trainer.py:
+
+Metric	Location
+gnorm	trainer.py:1070
+ups	trainer.py:1069
+gb_free	trainer.py:681
+loss_scale	trainer.py:710 (fp16 scaler)
+wall	trainer.py:111
+train_wall	trainer.py:507,721
+lr	trainer.py:795
+Model/criterion metrics — from binary_cross_entropy_with_logits.py reduce_metrics():
+
+Metric	Location	Definition
+loss	:337-339	BCE loss / sample_size / log(2)
+nsignals	:369	Signals in batch
+accuracy	:391-398	correct / total (per-label)
+em_accuracy	:400-407	Exact match — all labels for a sample correct
+precision	:409-416	tp / (tp + fp)
+recall	:418-425	tp / (tp + fn)
+2. Validation accuracy
+Yes, validation runs automatically every epoch (controlled by valid_subset: "valid" at diagnosis.yaml:35). The same reduce_metrics() runs on the validation set, so you will get valid_loss, valid_accuracy, valid_em_accuracy, valid_precision, valid_recall in WandB — they're just not prefixed train_inner/, they appear under a plain valid/ prefix. If you're not seeing them, check that your valid split actually exists in your data directory.
+
+3. Early stopping & LR scheduler
+Early stopping
+Already configured in your yaml at diagnosis.yaml:18:
+
+
+checkpoint:
+  patience: 30   # stops if no improvement for 30 epochs
+The metric monitored is best_checkpoint_metric (default: loss). You can change it to monitor validation accuracy instead:
+
+
+checkpoint:
+  patience: 10
+  best_checkpoint_metric: accuracy
+  maximize_best_checkpoint_metric: true
+LR scheduler
+Your yaml currently uses fixed (no decay). You can switch to step decay — which drops by a factor every N updates — by changing diagnosis.yaml:56-58:
+
+
+lr_scheduler:
+  _name: step
+  warmup_updates: 0
+  lr_decay: 0.5          # halve the LR each period
+  lr_deacy_period: 5000  # every 5000 updates  (note the typo in the source: "deacy")
+  min_lr: 1e-6
+The decay is exponential by update count (not epoch): lr = max(max_lr * decay^(updates // period), min_lr) — see step_lr_scheduler.py:81-82.
+
+There's also a tri_stage scheduler (warmup → hold → decay) if you want epoch-level control. Note there's no built-in "reduce on plateau" scheduler — the step scheduler decays on a fixed schedule regardless of validation performance.

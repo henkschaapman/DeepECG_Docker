@@ -14,6 +14,9 @@ COPY requirements.txt .
 # Create a virtual environment and install required libraries
 RUN pip install -r requirements.txt
 
+# Install WandB and psutil for training observability
+RUN pip install wandb psutil
+
 # Clone the fairseq-signals repository and install it
 RUN git clone https://github.com/HeartWise-AI/fairseq-signals && \
     cd fairseq-signals && \

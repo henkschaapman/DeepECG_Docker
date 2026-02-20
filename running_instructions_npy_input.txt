@@ -1,0 +1,73 @@
+
+docker run -it --gpus all --rm \
+-v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune_npy:/app/data/data_location:ro \
+-v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune_npy:/home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:ro \
+-v ./weights/:/app/weights/:ro \
+-v ./output_weights/:/app/output_weights/ \
+deepecg-docker:latest \
+/bin/bash
+
+POS_WEIGHT=$(cat /app/data/data_location/labels/pos_weight.txt)
+export WANDB_API_KEY=
+export WANDB_NAME=initial_test_run
+
+CUDA_VISIBLE_DEVICES=0 fairseq-hydra-train \
+	common.fp16=true \
+	task.data=/app/data/data_location/manifests/af_detection/ \
+	+task.npy_dataset=true \
+	model.model_path=/app/weights/base_ssl.pt \
+	model.num_labels=1 \
+	criterion._name=binary_cross_entropy_with_logits \
+	+criterion.pos_weight=$POS_WEIGHT \
+	checkpoint.save_dir=/app/output_weights \
+	--config-dir /app/fairseq-signals/examples/w2v_cmsc/config/finetuning/ecg_transformer \
+	--config-name diagnosis
+
+
+########################  CHANGES  ########################
+## The new script ##
+
+data_conversion_for_fairseq_finetuning_npy.py — same interface as the original:
+python data_conversion_for_fairseq_finetuning_npy.py \
+    /path/to/full_tvt_dataset_no_leakage \
+    ./fairseq_data_npy \
+    af_detection
+The script will print a summary including the exact task.data path and pos_weight value to use. The output is ~8 GB for your 67K training samples (written as a memory-mapped .npy so it never all sits in RAM at once during conversion).
+
+# Training command changes #
+
+Before (.mat format):
+CUDA_VISIBLE_DEVICES=0 fairseq-hydra-train \
+    common.fp16=true \
+    task.data=/app/data/data_location/manifests/af_detection/ \
+    +task.label_file=/app/data/data_location/labels/y.npy \
+    model.model_path=/app/weights/base_ssl.pt \
+    model.num_labels=1 \
+    criterion._name=binary_cross_entropy_with_logits \
+    +criterion.pos_weight=$POS_WEIGHT \
+    checkpoint.save_dir=/app/output_weights \
+    --config-dir /app/fairseq-signals/examples/w2v_cmsc/config/finetuning/ecg_transformer \
+    --config-name diagnosis
+
+
+After (npy format):
+CUDA_VISIBLE_DEVICES=0 fairseq-hydra-train \
+    common.fp16=true \
+    +task.npy_dataset=true \
+    task.data=/app/data/data_location_npy/manifests/af_detection/ \
+    model.model_path=/app/weights/base_ssl.pt \
+    model.num_labels=1 \
+    criterion._name=binary_cross_entropy_with_logits \
+    +criterion.pos_weight=$POS_WEIGHT \
+    checkpoint.save_dir=/app/output_weights \
+    --config-dir /app/fairseq-signals/examples/w2v_cmsc/config/finetuning/ecg_transformer \
+    --config-name diagnosis
+
+
+Three changes only:
+
+Add			+task.npy_dataset=true
+Remove		+task.label_file=... — labels are now embedded inside each split's .tsv manifest via y_path:
+Update		task.data= to point to the new manifest directory
+
+diagnosis.yaml needs no changes — +task.npy_dataset=true on the CLI overrides the default
