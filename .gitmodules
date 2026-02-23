@@ -1,0 +1,3 @@
+[submodule "fairseq_signals"]
+	path = fairseq_signals
+	url = https://github.com/henkschaapman/fairseq-signals.git

@@ -20,7 +20,11 @@ RUN pip install wandb psutil
 # Clone the fairseq-signals repository and install it
 RUN git clone https://github.com/HeartWise-AI/fairseq-signals && \
     cd fairseq-signals && \
-    pip install --editable ./    
+    pip install --editable ./
+
+# Overwrite with local modifications
+COPY fairseq-signals/fairseq_signals/data/ecg/raw_ecg_dataset.py \
+     fairseq-signals/fairseq_signals/data/ecg/raw_ecg_dataset.py
 
 # Copy the rest of the application code into the container
 COPY data/ data/

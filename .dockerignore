@@ -4,3 +4,4 @@ weights/
 deploy-venv/
 outputs/
 fairseq-signals/
+!fairseq-signals/fairseq_signals/data/ecg/raw_ecg_dataset.py
