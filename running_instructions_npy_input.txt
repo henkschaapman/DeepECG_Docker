@@ -1,4 +1,3 @@
-
 docker run -it --gpus all --rm --shm-size 8g \
 -v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:/app/data/data_location:ro \
 -v /home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:/home/p102329/thesis/mount_location/deepECG/full_tvt_dataset_no_leakage_converted_for_DeepECG_finetune:ro \
