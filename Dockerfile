@@ -29,6 +29,9 @@ COPY ./fairseq-signals/fairseq_signals/data/ecg/raw_ecg_dataset.py \
 COPY ./fairseq-signals/fairseq_signals/optim/lr_scheduler/reduce_on_plateau_schedule.py \
      fairseq-signals/fairseq_signals/optim/lr_scheduler/reduce_on_plateau_schedule.py
 
+COPY ./fairseq-signals/fairseq_signals/optim/lr_scheduler/two_phase_plateau_schedule.py \
+     fairseq-signals/fairseq_signals/optim/lr_scheduler/two_phase_plateau_schedule.py
+
 # Copy the rest of the application code into the container
 COPY data/ data/
 COPY models/ models/
